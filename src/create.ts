@@ -53,28 +53,46 @@ export class CreateStatement implements BaseStatement {
     this.constraints.value.forEach(current => {
       if (current.left === 'metabase_id') {
         data[current.left] = current.right.value
+        return
       }
 
       config[current.left] = current.right.value
     })
 
     return {
-      url: 'https://ep.ahamove.com/bi/v1/metabase_generate_iframe_url',
       data,
       config,
-      type: 'metabase_widget'
+      type: 'metabase'
     }
   }
 
   createBarchartWidget() {
+    const data = {}
+    const config = {}
+    let type = ''
 
+    this.constraints.value.forEach(current => {
+      if (current.left === 'metabase_id') {
+        data[current.left] = current.right.value
+        return
+      }
+
+      if (current.left === 'type') {
+        type = current.right.value as string
+        return
+      }
+
+      config[current.left] = current.right.value
+    })
+
+    return {
+      config,
+      type
+    }
   }
 
   createConfig() {
-    return {
-      url: 'https://ep.ahamove.com/ahakepler-api/staging/save-config',
-      method: 'POST'
-    }
+    return this.createType
   }
 }
 
@@ -84,7 +102,7 @@ export const creation = P.seqMap(
   multipleSpaces,
   constraintExpr.or(opt),
   function() {
-    return new CreateStatement(arguments[1], arguments[3])
+    return new CreateStatement(arguments[1], new CreateConstraints(arguments[3]))
   }
 )
 //
