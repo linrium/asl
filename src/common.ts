@@ -168,3 +168,9 @@ export interface Into {
   getValue(variables: Variable[]): Literal
   // into(): IntoIntoType
 }
+
+export interface BaseStatement {
+  globalVariables: any
+  inject(globalVariables: any): void
+  parse(): any
+}

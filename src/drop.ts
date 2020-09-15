@@ -1,8 +1,18 @@
 import P from "parsimmon"
-import { multipleSpaces, stringLiteral, textLiteral } from "./common"
+import { BaseStatement, multipleSpaces, stringLiteral, textLiteral } from "./common"
 
-export class DropStatement {
+export class DropStatement implements BaseStatement {
   constructor(public type: string, id: string) {
+  }
+
+  globalVariables: any
+
+  inject(globalVariables: any): void {
+    this.globalVariables = globalVariables
+  }
+
+  parse() {
+
   }
 }
 

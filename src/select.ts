@@ -1,6 +1,7 @@
 import P from "parsimmon"
 import {
   asAlias,
+  BaseStatement,
   commentManyExpr,
   CurrentBounds,
   CurrentFeatures,
@@ -131,9 +132,8 @@ export const limitExpr = P.seqMap(
 /**
  * Selection
  */
-
-export class SelectStatement {
-  public globalVariables: { [key: string]: any } = {}
+export class SelectStatement implements BaseStatement {
+  public globalVariables: any = {}
 
   constructor(
     public variables: Variable[],
