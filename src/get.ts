@@ -46,19 +46,21 @@ export class GetStatement implements BaseStatement {
     }
     const config = {}
 
-    this.constraints.value.forEach((current) => {
-      if (current.left === "config_id") {
-        params["id"] = current.right.value
-        return
-      }
+    if (Array.isArray(this.constraints.value)) {
+      this.constraints.value.forEach((current) => {
+        if (current.left === "id") {
+          params["id"] = current.right.value
+          return
+        }
 
-      if (current.left === 'user_id') {
-        params["user_id"] = current.right.value
-        return
-      }
+        if (current.left === 'user_id') {
+          params["user_id"] = current.right.value
+          return
+        }
 
-      config[current.left] = current.right.value
-    })
+        config[current.left] = current.right.value
+      })
+    }
 
     return {
       params,

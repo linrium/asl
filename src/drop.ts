@@ -36,7 +36,7 @@ export class DropStatement implements BaseStatement {
     const options: any = {}
     const config: any = {}
 
-    if (this.constraints.value) {
+    if (Array.isArray(this.constraints.value)) {
       this.constraints.value.forEach(current => {
         switch (current.left) {
           case 'type':
