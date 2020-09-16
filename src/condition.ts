@@ -1,6 +1,8 @@
 import {
   builtInValueExpr,
-  commentExpr, Func, Into,
+  commentExpr,
+  Func,
+  Into,
   literal,
   Literal,
   LiteralList,
@@ -9,7 +11,8 @@ import {
   operatorExpr,
   opt,
   textLiteral,
-  valueList, word
+  valueList,
+  word,
 } from "./common"
 import P from "parsimmon"
 import { Variable, VariableBinding, variableBindingLiteral } from "./variable"
@@ -82,7 +85,11 @@ const funcExpr = P.seqMap(
 )
 
 export const simpleExpr = P.seqMap(
-  P.seq(multipleSpaces, P.string("and").or(opt), multipleSpaces),
+  P.seq(
+    multipleSpaces,
+    P.string("and").or(P.string(",")).or(opt),
+    multipleSpaces
+  ),
   textLiteral,
   multipleSpaces,
   operatorExpr,
@@ -101,13 +108,11 @@ export const simpleExpr = P.seqMap(
   .many()
   .map((result) => result.filter((item) => item instanceof ConditionTree))
 
-
 export const constraintExpr = word("(")
   .then(simpleExpr)
   .skip(word(")"))
-  .map(result => result)
+  .map((result) => result)
 
 export class Constraints {
-  constructor(public value: ConditionTree[]) {
-  }
+  constructor(public value: ConditionTree[] = []) {}
 }

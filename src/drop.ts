@@ -1,9 +1,30 @@
 import P from "parsimmon"
-import { BaseStatement, multipleSpaces, stringLiteral, textLiteral } from "./common"
+import {
+  BaseStatement,
+  multipleSpaces,
+  opt,
+  stringLiteral,
+  textLiteral,
+} from "./common"
+import { constraintExpr, Constraints } from "./condition"
+
+export class DropType {
+  constructor(public type: string, public name: string) {}
+}
+
+export const dropTypeExpr = P.seqMap(
+  P.string("drop"),
+  multipleSpaces,
+  textLiteral,
+  multipleSpaces,
+  stringLiteral,
+  function () {
+    return new DropType(arguments[2], arguments[4])
+  }
+)
 
 export class DropStatement implements BaseStatement {
-  constructor(public type: string, public id: string) {
-  }
+  constructor(public dropType: DropType, public constraints: Constraints) {}
 
   globalVariables: any
 
@@ -12,22 +33,53 @@ export class DropStatement implements BaseStatement {
   }
 
   parse() {
+    const options: any = {}
+    const config: any = {}
+
+    if (this.constraints.value) {
+      this.constraints.value.forEach(current => {
+        switch (current.left) {
+          case 'type':
+            options.type = current.right.value
+            break
+          case 'key':
+            options.key = current.right.value
+            break
+          default:
+            config[current.left] = current.right.value
+        }
+      })
+    }
+
     return {
-      type: this.type,
-      id: this.id
+      ...this.dropType,
+      options,
+      config,
     }
   }
 }
 
 export const dropExpr = P.seqMap(
   multipleSpaces,
-  P.string('drop'),
+  dropTypeExpr,
   multipleSpaces,
-  textLiteral,
-  multipleSpaces,
-  stringLiteral,
-  P.all,
-  function() {
-    return new DropStatement(arguments[3], arguments[5])
+  constraintExpr.or(opt),
+  function () {
+    return new DropStatement(arguments[1], new Constraints(arguments[3]))
   }
 )
+
+// const result = dropation.tryParse(`
+// drop widget 'test' (
+//   type = 'metabase'
+//   column = 'name'
+// )
+// `)
+//
+// console.log(
+//   util.inspect(result, {
+//     showHidden: false,
+//     depth: null,
+//     colors: true,
+//   })
+// )

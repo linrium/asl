@@ -33,7 +33,38 @@ export class GetStatement implements BaseStatement {
   }
 
   parse() {
+    if (this.getType.type === 'config') {
+      return this.getConfig()
+    }
+
     return this.getType
+  }
+
+  getConfig() {
+    const params = {
+      name: this.getType.name
+    }
+    const config = {}
+
+    this.constraints.value.forEach((current) => {
+      if (current.left === "config_id") {
+        params["id"] = current.right.value
+        return
+      }
+
+      if (current.left === 'user_id') {
+        params["user_id"] = current.right.value
+        return
+      }
+
+      config[current.left] = current.right.value
+    })
+
+    return {
+      params,
+      config,
+      type: "config",
+    }
   }
 }
 
