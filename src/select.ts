@@ -414,7 +414,7 @@ export class SelectStatement implements BaseStatement {
   }
 }
 
-export const selection = P.seqMap(
+export const selectExpr = P.seqMap(
   P.seq(commentManyExpr, multipleSpaces),
   declareVariableExpr,
   P.seq(multipleSpaces, P.string("select"), multipleSpaces),

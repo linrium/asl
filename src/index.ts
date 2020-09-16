@@ -1,13 +1,18 @@
-import { selection } from "./select"
+export * from "./select"
+export * from "./drop"
+export * from "./alter"
+export * from "./create"
+export * from "./keywords"
+export * from "./get"
 
-export * from './select'
-export * from './drop'
-export * from './alter'
-export * from './create'
-export * from './keywords'
-
-import { alteration } from "./alter"
+import { selectExpr } from "./select"
+import { alterExpr } from "./alter"
 import { dropExpr } from "./drop"
-import { creation } from "./create"
+import { createExpr } from "./create"
+import { getExpr } from "./get"
 
-export const compile = selection.or(creation).or(alteration).or(dropExpr)
+export const compile = selectExpr
+  .or(createExpr)
+  .or(alterExpr)
+  .or(dropExpr)
+  .or(getExpr)

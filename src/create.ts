@@ -1,7 +1,12 @@
 import P from "parsimmon"
-import { BaseStatement, multipleSpaces, opt, stringLiteral, textLiteral, word } from "./common"
-import util  from "util"
-import { ConditionTree, constraintExpr } from "./condition"
+import {
+  BaseStatement,
+  multipleSpaces,
+  opt,
+  stringLiteral,
+  textLiteral,
+} from "./common"
+import { constraintExpr, Constraints } from "./condition"
 
 export class CreateType {
   constructor(public type: string, public name: string) {}
@@ -18,29 +23,24 @@ export const createTypeExpr = P.seqMap(
   }
 )
 
-export class CreateConstraints {
-  constructor(public value: ConditionTree[]) {
-  }
-}
-
 export class CreateStatement implements BaseStatement {
   globalVariables: any
 
-  constructor(public createType: CreateType, public constraints: CreateConstraints) {}
+  constructor(public createType: CreateType, public constraints: Constraints) {}
 
   inject(globalVariables: any): void {
     this.globalVariables = globalVariables
   }
 
   parse() {
-    if (this.createType.type === 'config') {
+    if (this.createType.type === "config") {
       return this.createConfig()
     }
 
-    if (this.createType.type === 'widget') {
-      const widgetType = this.constraints.value.find(o => o.left === 'type')
+    if (this.createType.type === "widget") {
+      const widgetType = this.constraints.value.find((o) => o.left === "type")
 
-      if (widgetType.right.value === 'metabase') {
+      if (widgetType.right.value === "metabase") {
         return this.createMetabaseWidget()
       }
     }
@@ -50,9 +50,9 @@ export class CreateStatement implements BaseStatement {
     const data = {}
     const config = {}
 
-    this.constraints.value.forEach(current => {
-      if (current.left === 'metabase_id') {
-        data[current.left] = current.right.value
+    this.constraints.value.forEach((current) => {
+      if (current.left === "metabase_id") {
+        data["cardid"] = current.right.value
         return
       }
 
@@ -62,22 +62,22 @@ export class CreateStatement implements BaseStatement {
     return {
       data,
       config,
-      type: 'metabase'
+      type: "metabase",
     }
   }
 
   createBarchartWidget() {
     const data = {}
     const config = {}
-    let type = ''
+    let type = ""
 
-    this.constraints.value.forEach(current => {
-      if (current.left === 'metabase_id') {
+    this.constraints.value.forEach((current) => {
+      if (current.left === "metabase_id") {
         data[current.left] = current.right.value
         return
       }
 
-      if (current.left === 'type') {
+      if (current.left === "type") {
         type = current.right.value as string
         return
       }
@@ -87,7 +87,7 @@ export class CreateStatement implements BaseStatement {
 
     return {
       config,
-      type
+      type,
     }
   }
 
@@ -96,13 +96,16 @@ export class CreateStatement implements BaseStatement {
   }
 }
 
-export const creation = P.seqMap(
+export const createExpr = P.seqMap(
   multipleSpaces,
   createTypeExpr,
   multipleSpaces,
   constraintExpr.or(opt),
-  function() {
-    return new CreateStatement(arguments[1], new CreateConstraints(arguments[3]))
+  function () {
+    return new CreateStatement(
+      arguments[1],
+      new Constraints(arguments[3])
+    )
   }
 )
 //

@@ -2,7 +2,7 @@ import P from "parsimmon"
 import { BaseStatement, multipleSpaces, stringLiteral, textLiteral } from "./common"
 
 export class DropStatement implements BaseStatement {
-  constructor(public type: string, id: string) {
+  constructor(public type: string, public id: string) {
   }
 
   globalVariables: any
@@ -12,7 +12,10 @@ export class DropStatement implements BaseStatement {
   }
 
   parse() {
-
+    return {
+      type: this.type,
+      id: this.id
+    }
   }
 }
 

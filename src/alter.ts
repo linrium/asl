@@ -1,6 +1,12 @@
 import P from "parsimmon"
-import { BaseStatement, multipleSpaces, opt, stringLiteral, textLiteral, word } from "./common"
-import { ConditionTree, constraintExpr } from "./condition"
+import {
+  BaseStatement,
+  multipleSpaces,
+  opt,
+  stringLiteral,
+  textLiteral,
+} from "./common"
+import { constraintExpr, Constraints } from "./condition"
 
 export class AlterType {
   constructor(public type: string, public name: string) {}
@@ -17,13 +23,8 @@ export const alterTypeExpr = P.seqMap(
   }
 )
 
-export class AlterConstraints {
-  constructor(public constraint: ConditionTree[]) {
-  }
-}
-
 export class AlterStatement implements BaseStatement {
-  constructor(public alterType: AlterType, public constraints: AlterConstraints) {}
+  constructor(public alterType: AlterType, public constraints: Constraints) {}
 
   globalVariables: any
 
@@ -32,26 +33,20 @@ export class AlterStatement implements BaseStatement {
   }
 
   parse() {
-    this.alterConfig()
-  }
-
-  alterConfig() {
-    return {
-      url: 'https://ep.ahamove.com/ahakepler-api/staging/update-config',
-    }
+    return this.alterType
   }
 }
 
-export const alteration = P.seqMap(
+export const alterExpr = P.seqMap(
   multipleSpaces,
   alterTypeExpr,
   multipleSpaces,
   constraintExpr.or(opt),
-  function() {
-    return new AlterStatement(arguments[1], arguments[3])
+  function () {
+    return new AlterStatement(arguments[1], new Constraints(arguments[3]))
   }
 )
-//
+
 // const result = alteration.tryParse(`
 // alter widget 'test' (
 //   type = 'metabase'

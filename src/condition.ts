@@ -106,3 +106,8 @@ export const constraintExpr = word("(")
   .then(simpleExpr)
   .skip(word(")"))
   .map(result => result)
+
+export class Constraints {
+  constructor(public value: ConditionTree[]) {
+  }
+}
