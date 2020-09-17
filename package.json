@@ -1,12 +1,13 @@
 {
   "name": "@ahamove/asl",
   "description": "Aha Query Language",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "license": "MIT",
   "private": false,
   "scripts": {
+    "start": "ts-node ./src/select.ts",
     "build": "tsc",
     "dev": "ts-node ./src/index.ts",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",

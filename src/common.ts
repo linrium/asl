@@ -75,6 +75,67 @@ export class CurrentFeatures {
 
 const currentFeatures = P.string('current_features')
 
+const capitalizeFirstLetter = string => string.charAt(0).toUpperCase() + string.slice(1)
+
+const deAccent = str => {
+  str = str.replace(/[àáạảãâầấậẩẫăằắặẳẵ]/g, "a");
+  str = str.replace(/[èéẹẻẽêềếệểễ]/g, "e");
+  str = str.replace(/[ìíịỉĩ]/g, "i");
+  str = str.replace(/[òóọỏõôồốộổỗơờớợởỡ]/g, "o");
+  str = str.replace(/[ùúụủũưừứựửữ]/g, "u");
+  str = str.replace(/[ỳýỵỷỹ]/g, "y");
+  str = str.replace(/đ/g, "d");
+  str = str.replace(/[ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ]/g, "A");
+  str = str.replace(/[ÈÉẸẺẼÊỀẾỆỂỄ]/g, "E");
+  str = str.replace(/[ÌÍỊỈĨ]/g, "I");
+  str = str.replace(/[ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ]/g, "O");
+  str = str.replace(/[ÙÚỤỦŨƯỪỨỰỬỮ]/g, "U");
+  str = str.replace(/[ỲÝỴỶỸ]/g, "Y");
+  str = str.replace(/Đ/g, "D");
+  str = str.replace(/\s+/g, ' ');
+
+  return str.trim();
+}
+
+const formatWord = text => text.split(' ').map(t => capitalizeFirstLetter(deAccent(t))).join('_')
+
+export class AdminArea {
+  constructor(public areas: string[]) {
+    // this.areas = areas.map(formatWord)
+  }
+
+  adminLevel(name: string, len: number) {
+    if (/Province|City/gi.test(name) && len === 1) {
+      return 'admin-2'
+    }
+
+    if (/District|City|Town/gi.test(name)) {
+      return 'admin-3'
+    }
+
+    if (/Ward|Townlet/gi.test(name)) {
+      return 'admin-4'
+    }
+
+    return null
+  }
+
+  // format() {
+  //   return this.areas.map(name => {
+  //     const adminLevel = this.adminLevel(name, this.areas.length)
+  //     const formattedName = `name_${name.replaceAll(' ', '_')}`
+  //
+  //     return {
+  //       name: name,
+  //       formattedName,
+  //       data: {
+  //         query: `scan ${adminLevel} where ${formattedName} 1 1`
+  //       }
+  //     }
+  //   })
+  // }
+}
+
 export const builtInValueExpr = P.alt(
   currentTimeExpr,
   currentDateExpr,

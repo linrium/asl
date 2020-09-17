@@ -1,3 +1,5 @@
+import util from "util"
+
 export * from "./select"
 export * from "./drop"
 export * from "./alter"

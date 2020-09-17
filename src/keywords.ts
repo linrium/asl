@@ -16,6 +16,7 @@ export enum DocumentKeyword {
   Metabase = 'metabase',
   Url = 'url',
   Tile38 = 'tile38',
+  Static = 'static'
 }
 
 export const documentKeywords = P.alt(

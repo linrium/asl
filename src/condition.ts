@@ -60,6 +60,7 @@ export enum BuiltInFunction {
   Point = "point",
   Object = "object",
   Hash = "hash",
+  Get = "get",
 }
 
 const funcExpr = P.seqMap(
@@ -67,7 +68,8 @@ const funcExpr = P.seqMap(
     P.string(BuiltInFunction.Bounds),
     P.string(BuiltInFunction.Point),
     P.string(BuiltInFunction.Object),
-    P.string(BuiltInFunction.Hash)
+    P.string(BuiltInFunction.Hash),
+    P.string(BuiltInFunction.Get)
   ),
   P.seq(multipleSpaces, P.string("("), multipleSpaces),
   literal

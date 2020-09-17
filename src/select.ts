@@ -16,6 +16,7 @@ import {
 import { DocumentKeyword, documentKeywords } from "./keywords"
 import { Parameter, simpleExpr, WhereClause } from "./condition"
 import { declareVariableExpr, Variable } from "./variable"
+import util from 'util'
 
 function takeUntil(end) {
   return P(function (input, i) {
@@ -71,21 +72,23 @@ const joinOperator = P.string("on")
 const joinCondition = P.seq(multipleSpaces, P.string("="), multipleSpaces)
 
 const joinClause = P.seqMap(
+  commentManyExpr,
   P.seq(multipleSpaces, P.string("join"), multipleSpaces),
   P.seq(documentKeywords, multipleSpaces, joinOperator, multipleSpaces),
   propertyExpr,
   joinCondition,
   propertyExpr,
   function () {
-    return new JoinClause(arguments[2], arguments[4])
+    return new JoinClause(arguments[3], arguments[5])
   }
 )
 
 const whereClause = P.seqMap(
+  commentManyExpr,
   P.seq(multipleSpaces, P.string("where"), multipleSpaces),
   simpleExpr,
   function () {
-    return arguments[1]
+    return arguments[2]
   }
 )
 
@@ -194,6 +197,17 @@ export class SelectStatement implements BaseStatement {
     return null
   }
 
+  getAdminLevel(index: number) {
+    switch (index) {
+      case 0:
+        return "admin-2"
+      case 1:
+        return "admin-3"
+      case 2:
+        return "admin-4"
+    }
+  }
+
   parse() {
     if (this.document.name === DocumentKeyword.Tile38) {
       return this.tile38Query()
@@ -224,7 +238,7 @@ export class SelectStatement implements BaseStatement {
       }
 
       if (current.left === "metabase_id") {
-        options.url = `https://ep.ahamove.com/bi/v1/metabase_card?cardid=${rightValue}`
+        options.params['cardid'] = rightValue
         options.documentName = DocumentKeyword.Metabase
       }
 
@@ -254,6 +268,7 @@ export class SelectStatement implements BaseStatement {
     const head = []
     const tail: any[] = []
     const filters = []
+    const areas = []
     let funcType = ""
 
     for (let i = 0; i < this.whereClause.length; i++) {
@@ -329,8 +344,13 @@ export class SelectStatement implements BaseStatement {
         }
       }
 
+      if (current.left === "scan") {
+        head[0] = current.left
+        continue
+      }
+
       if (
-        ["nearby", "intersects", "within", "scan", "search"].includes(
+        ["nearby", "intersects", "within", "search"].includes(
           current.left
         )
       ) {
@@ -339,6 +359,16 @@ export class SelectStatement implements BaseStatement {
         const func = rightValue
 
         if (func instanceof Func) {
+          if (func.identifier === 'get') {
+            func.args.value.forEach((literal, index) => {
+              areas.push({
+                name: literal.value,
+                level: this.getAdminLevel(index)
+              })
+            })
+            continue
+          }
+
           tail.push(func.identifier)
 
           func.args.value.forEach((arg) => {
@@ -383,7 +413,6 @@ export class SelectStatement implements BaseStatement {
             tail.splice(currentPointIndex, 1, lat, lon)
 
             return {
-              url: "https://tile38.ahamove.com/query",
               data: {
                 query: head.concat(options).concat(tail).join(" "),
               },
@@ -401,10 +430,13 @@ export class SelectStatement implements BaseStatement {
 
     return [
       {
-        url: "https://tile38.ahamove.com/query",
         data: {
           query: head.concat(options).concat(tail).join(" "),
         },
+        head,
+        options,
+        tail,
+        areas,
         documentName: DocumentKeyword.Tile38,
         method: "POST",
         alias: this.document.alias,
@@ -425,9 +457,10 @@ export const selectExpr = P.seqMap(
   ),
   joinClause.or(opt),
   whereClause.or(opt),
-  limitExpr.or(opt),
+  limitExpr.or(opt).or(commentManyExpr),
   P.all,
   function () {
+    console.log(arguments)
     const variables = arguments[1]
 
     return new SelectStatement(
@@ -472,12 +505,13 @@ export const selectExpr = P.seqMap(
 // where
 //   metabase_id = 11106 and
 //   postId = {{@postId}} and
+//   within in get('Ho_Chi_Minh_City', 'District_8')
 // `
 //
-// const result = selection.tryParse(testMetabase)
+// const result = selectExpr.tryParse(testMetabase)
 //
 // console.log(
-//   util.inspect(result.urlQuery(), {
+//   util.inspect(result, {
 //     showHidden: false,
 //     depth: null,
 //     colors: true,
