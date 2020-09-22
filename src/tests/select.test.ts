@@ -1,9 +1,16 @@
-import { AllField, Document, FieldDefinitionExpression, selectExpr, SelectStatement } from "../select"
+import {
+  AllField,
+  ColField,
+  Document,
+  FieldDefinitionExpression,
+  JoinClause, Property,
+  selectExpr,
+  SelectStatement
+} from "../select"
 import { DocumentKeyword } from "../keywords"
 import { ConditionTree, Parameter } from "../condition"
 import { Literal, Operator } from "../common"
 import { Variable } from "../variable"
-import util from 'util'
 
 describe("tile38", function() {
   it("simple", function() {
@@ -13,6 +20,22 @@ describe("tile38", function() {
       [],
       new Document(DocumentKeyword.Tile38),
       new FieldDefinitionExpression(new AllField()),
+    )
+    expect(result).toEqual(expected)
+  })
+
+  it("multiple fields", function() {
+    const result = selectExpr.tryParse(`select _id, username from tile38`)
+
+    console.log(result)
+
+    const expected = new SelectStatement(
+      [],
+      new Document(DocumentKeyword.Tile38),
+      new FieldDefinitionExpression([
+        new ColField('_id'),
+        new ColField('username'),
+      ]),
     )
     expect(result).toEqual(expected)
   })
@@ -376,6 +399,114 @@ describe("tile38", function() {
         // new ConditionTree(Operator.Equal, 'name_cn', new Parameter(new Literal("陈俊岭"))),
         new ConditionTree(Operator.Greater, 'age', new Parameter(new Literal(18))),
       ]
+    )
+
+    expect(result).toEqual(expected)
+  })
+
+  it("simple join", function() {
+    const result = selectExpr.tryParse(`
+    declare @name_vi = 'Trần Tuấn Linh'
+    declare @age = 18
+    
+    select * from tile38
+    join tile38 on tile38.id = url.id
+    where 
+      name_vi = {{@name_vi}} and
+      age > {{@age}}
+    `)
+
+    const expected = new SelectStatement(
+      [
+        new Variable('name_vi', new Literal('Trần Tuấn Linh')),
+        // new Variable('name_cn', new Literal('陈俊岭')),
+        new Variable('age', new Literal(18))
+      ],
+      new Document(DocumentKeyword.Tile38),
+      new FieldDefinitionExpression(new AllField()),
+      new JoinClause(
+        new Property('tile38', 'id'),
+        new Property('url', 'id')
+      ),
+      [
+        new ConditionTree(Operator.Equal, 'name_vi', new Parameter(new Literal("Trần Tuấn Linh"))),
+        // new ConditionTree(Operator.Equal, 'name_cn', new Parameter(new Literal("陈俊岭"))),
+        new ConditionTree(Operator.Greater, 'age', new Parameter(new Literal(18))),
+      ]
+    )
+
+    expect(result).toEqual(expected)
+  })
+
+  it("comment between join clause", function() {
+    const result = selectExpr.tryParse(`
+    declare @name_vi = 'Trần Tuấn Linh'
+    declare @age = 18
+    
+    select * from tile38
+    -- test1
+    join tile38 on tile38.id = url.id
+    -- test2
+    where 
+      name_vi = {{@name_vi}} and
+      age > {{@age}}
+    `)
+
+    const expected = new SelectStatement(
+      [
+        new Variable('name_vi', new Literal('Trần Tuấn Linh')),
+        // new Variable('name_cn', new Literal('陈俊岭')),
+        new Variable('age', new Literal(18))
+      ],
+      new Document(DocumentKeyword.Tile38),
+      new FieldDefinitionExpression(new AllField()),
+      new JoinClause(
+        new Property('tile38', 'id'),
+        new Property('url', 'id')
+      ),
+      [
+        new ConditionTree(Operator.Equal, 'name_vi', new Parameter(new Literal("Trần Tuấn Linh"))),
+        // new ConditionTree(Operator.Equal, 'name_cn', new Parameter(new Literal("陈俊岭"))),
+        new ConditionTree(Operator.Greater, 'age', new Parameter(new Literal(18))),
+      ]
+    )
+
+    expect(result).toEqual(expected)
+  })
+
+  it("join url with metabase", function() {
+    const result = selectExpr.tryParse(`
+    select * from url
+    join metabase on url.user_id = metabase.id
+    `)
+
+    const expected = new SelectStatement(
+      [],
+      new Document(DocumentKeyword.Url),
+      new FieldDefinitionExpression(new AllField()),
+      new JoinClause(
+        new Property('url', 'user_id'),
+        new Property('metabase', 'id')
+      )
+    )
+
+    expect(result).toEqual(expected)
+  })
+
+  it("join metabase with tile38", function() {
+    const result = selectExpr.tryParse(`
+    select * from metabase
+    join tile38 on metabase.id = tile38.user_id
+    `)
+
+    const expected = new SelectStatement(
+      [],
+      new Document(DocumentKeyword.Metabase),
+      new FieldDefinitionExpression(new AllField()),
+      new JoinClause(
+        new Property('metabase', 'id'),
+        new Property('tile38', 'user_id')
+      )
     )
 
     expect(result).toEqual(expected)
