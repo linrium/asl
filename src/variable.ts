@@ -3,9 +3,9 @@ import {
   Into,
   Literal,
   literal,
-  multipleSpaces,
+  multipleSpaces, opt,
   textLiteral,
-  valueList,
+  valueList
 } from "./common"
 import P from "parsimmon"
 
@@ -43,7 +43,7 @@ export const declareVariableExpr = P.seqMap(
 
 export const variableBindingLiteral = P.seqMap(
   P.string("@"),
-  P.letters,
+  textLiteral,
   function () {
     return new VariableBinding(arguments[1])
   }

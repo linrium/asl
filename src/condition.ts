@@ -1,6 +1,7 @@
 import {
-  builtInValueExpr,
+  builtInValueExpr, Comment,
   commentExpr,
+  commentManyExpr,
   Func,
   Into,
   literal,
@@ -12,7 +13,7 @@ import {
   opt,
   textLiteral,
   valueList,
-  word,
+  word
 } from "./common"
 import P from "parsimmon"
 import { Variable, VariableBinding, variableBindingLiteral } from "./variable"
@@ -86,29 +87,32 @@ const funcExpr = P.seqMap(
   }
 )
 
-export const simpleExpr = P.seqMap(
-  P.seq(
+export const simpleExpr = P.alt(
+  commentExpr,
+  P.seqMap(
+    textLiteral,
     multipleSpaces,
-    P.string("and").or(P.string(",")).or(opt),
-    multipleSpaces
+    operatorExpr,
+    multipleSpaces,
+    literal
+      .or(valueList)
+      .or(variableBindingLiteral)
+      .or(parameterExpr)
+      .or(funcExpr),
+    P.seq(
+      multipleSpaces,
+      P.string("and").or(P.string(",")).or(P.string("，")).or(opt),
+      multipleSpaces
+    ),
+    function () {
+      return new ConditionTree(arguments[2], arguments[0], arguments[4])
+    }
   ),
-  textLiteral,
-  multipleSpaces,
-  operatorExpr,
-  multipleSpaces,
-  literal
-    .or(valueList)
-    .or(variableBindingLiteral)
-    .or(parameterExpr)
-    .or(funcExpr),
-  multipleSpaces,
-  function () {
-    return new ConditionTree(arguments[3], arguments[1], arguments[5])
-  }
 )
-  .or(commentExpr)
   .many()
-  .map((result) => result.filter((item) => item instanceof ConditionTree))
+  .map((result) => {
+    return result.filter((item) => item instanceof ConditionTree)
+  })
 
 export const constraintExpr = word("(")
   .then(simpleExpr)

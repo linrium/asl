@@ -7,9 +7,31 @@ export const token = (parser) => parser.skip(P.optWhitespace)
 
 export const word = (str) => P.string(str).thru(token)
 
-export const opt = P.string("")
+export const opt = P.string("").map(() => undefined)
 
 export const wsSepComma = P.seq(multipleSpaces, P.string(","), multipleSpaces)
+
+export function takeUntil(end) {
+  return P(function (input, i) {
+    let words = []
+
+    for (let j = i; j < input.length; j++) {
+      words.push(input.charAt(j))
+
+      if (
+        words.length >= end.length &&
+        words.slice(-end.length).join("") === end
+      ) {
+        return P.makeSuccess(
+          j - end.length,
+          words.slice(0, words.length - end.length).join("")
+        )
+      }
+    }
+
+    return P.makeFailure(i, "something went wrong")
+  })
+}
 
 export const asAlias = P.seqMap(
   multipleSpaces,
@@ -182,7 +204,7 @@ export const quote = P.alt(P.string("'"), P.string('"'))
 
 export const textLiteral = P.regexp(/[a-zA-Z0-9-_]*/)
 
-export const stringLiteral = P.regexp(/[a-zA-Z0-9/:.@#_?=-]*/)
+export const stringLiteral = P.regexp(/[\u4e00-\u9fa5_a-zA-Z0-9/:.@#?=-AĂÂÁẮẤÀẰẦẢẲẨÃẴẪẠẶẬĐEÊÉẾÈỀẺỂẼỄẸỆIÍÌỈĨỊOÔƠÓỐỚÒỒỜỎỔỞÕỖỠỌỘỢUƯÚỨÙỪỦỬŨỮỤỰYÝỲỶỸỴA\s]*/i)
   .trim(P.optWhitespace)
   .wrap(quote, quote)
 

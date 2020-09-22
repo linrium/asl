@@ -11,34 +11,11 @@ import {
   LiteralList,
   multipleSpaces,
   Operator,
-  opt,
+  opt, takeUntil
 } from "./common"
 import { DocumentKeyword, documentKeywords } from "./keywords"
 import { Parameter, simpleExpr, WhereClause } from "./condition"
 import { declareVariableExpr, Variable } from "./variable"
-import util from 'util'
-
-function takeUntil(end) {
-  return P(function (input, i) {
-    let words = []
-
-    for (let j = i; j < input.length; j++) {
-      words.push(input.charAt(j))
-
-      if (
-        words.length >= end.length &&
-        words.slice(-end.length).join("") === end
-      ) {
-        return P.makeSuccess(
-          j - end.length,
-          words.slice(0, words.length - end.length).join("")
-        )
-      }
-    }
-
-    return P.makeFailure(i, "something went wrong")
-  })
-}
 
 /**
  * Document
@@ -88,6 +65,7 @@ const whereClause = P.seqMap(
   P.seq(multipleSpaces, P.string("where"), multipleSpaces),
   simpleExpr,
   function () {
+    // console.log('arguments', arguments)
     return arguments[2]
   }
 )
@@ -95,15 +73,15 @@ const whereClause = P.seqMap(
 /**
  * Field
  */
-class AllField {}
+export class AllField {}
 
-class ColField {
+export class ColField {
   constructor(public value: string) {}
 }
 
 export type FieldValue = AllField | ColField
 
-class FieldDefinitionExpression {
+export class FieldDefinitionExpression {
   constructor(public value: FieldValue) {}
 }
 
@@ -147,12 +125,14 @@ export class SelectStatement implements BaseStatement {
     public limitClause?: LimitClause
   ) {
     // set all variables to where clause
-    this.whereClause = this.whereClause.map((it) => {
-      return {
-        ...it,
-        right: it.right.getValue(this.variables),
-      }
-    })
+    if (this.whereClause) {
+      this.whereClause = this.whereClause.map((it) => {
+        return {
+          ...it,
+          right: it.right.getValue(this.variables),
+        }
+      })
+    }
   }
 
   inject(globalVariables: any) {
@@ -460,7 +440,6 @@ export const selectExpr = P.seqMap(
   limitExpr.or(opt).or(commentManyExpr),
   P.all,
   function () {
-    console.log(arguments)
     const variables = arguments[1]
 
     return new SelectStatement(
