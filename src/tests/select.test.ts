@@ -12,13 +12,35 @@ import { ConditionTree, Parameter } from "../condition"
 import { Literal, Operator } from "../common"
 import { Variable } from "../variable"
 
-describe("tile38", function() {
-  it("simple", function() {
+describe("select", function() {
+  it("simple tile38", function() {
     const result = selectExpr.tryParse(`select * from tile38`)
 
     const expected = new SelectStatement(
       [],
       new Document(DocumentKeyword.Tile38),
+      new FieldDefinitionExpression(new AllField()),
+    )
+    expect(result).toEqual(expected)
+  })
+
+  it("simple url", function() {
+    const result = selectExpr.tryParse(`select * from url`)
+
+    const expected = new SelectStatement(
+      [],
+      new Document(DocumentKeyword.Url),
+      new FieldDefinitionExpression(new AllField()),
+    )
+    expect(result).toEqual(expected)
+  })
+
+  it("simple metabase", function() {
+    const result = selectExpr.tryParse(`select * from metabase`)
+
+    const expected = new SelectStatement(
+      [],
+      new Document(DocumentKeyword.Metabase),
       new FieldDefinitionExpression(new AllField()),
     )
     expect(result).toEqual(expected)
