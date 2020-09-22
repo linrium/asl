@@ -204,7 +204,7 @@ export const quote = P.alt(P.string("'"), P.string('"'))
 
 export const textLiteral = P.regexp(/[a-zA-Z0-9-_]*/)
 
-export const stringLiteral = P.regexp(/[\u4e00-\u9fa5_a-zA-Z0-9/:.@#?=-AĂÂÁẮẤÀẰẦẢẲẨÃẴẪẠẶẬĐEÊÉẾÈỀẺỂẼỄẸỆIÍÌỈĨỊOÔƠÓỐỚÒỒỜỎỔỞÕỖỠỌỘỢUƯÚỨÙỪỦỬŨỮỤỰYÝỲỶỸỴA\s]*/i)
+export const stringLiteral = P.regexp(/[\u4e00-\u9fa5_a-zA-Z0-9/:.@#?=AĂÂÁẮẤÀẰẦẢẲẨÃẴẪẠẶẬĐEÊÉẾÈỀẺỂẼỄẸỆIÍÌỈĨỊOÔƠÓỐỚÒỒỜỎỔỞÕỖỠỌỘỢUƯÚỨÙỪỦỬŨỮỤỰYÝỲỶỸỴ\s-]*/i)
   .trim(P.optWhitespace)
   .wrap(quote, quote)
 

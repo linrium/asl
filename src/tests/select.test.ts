@@ -144,7 +144,7 @@ describe("select", function() {
   it("simple where", function() {
     const result = selectExpr.tryParse(`
     select * from tile38
-    where name = "Linh"
+    where tile38_id = "order-stop-sgn-bike" and within in get('Ho_Chi_Minh_City', 'District_5')
     `)
 
     const expected = new SelectStatement(
@@ -153,7 +153,8 @@ describe("select", function() {
       new FieldDefinitionExpression(new AllField()),
       undefined,
       [
-        new ConditionTree(Operator.Equal, 'name', new Literal("Linh"))
+        new ConditionTree(Operator.Equal, 'tile38_id', new Literal("Linh")),
+        new ConditionTree(Operator.Equal, 'age', new Literal(18))
       ]
     )
     expect(result).toEqual(expected)
