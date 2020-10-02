@@ -43,6 +43,7 @@ export const alterExpr = P.seqMap(
   multipleSpaces,
   constraintExpr.or(opt),
   function () {
+    console.log(arguments)
     return new AlterStatement(arguments[1], new Constraints(arguments[3]))
   }
 )

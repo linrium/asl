@@ -11,10 +11,11 @@ import {
   LiteralList,
   multipleSpaces,
   Operator,
-  opt, takeUntil
+  opt,
+  takeUntil,
 } from "./common"
 import { DocumentKeyword, documentKeywords } from "./keywords"
-import { Parameter, simpleExpr, WhereClause } from "./condition"
+import { ConditionTree, Parameter, simpleExpr, WhereClause } from "./condition"
 import { declareVariableExpr, Variable } from "./variable"
 
 /**
@@ -189,6 +190,14 @@ export class SelectStatement implements BaseStatement {
   }
 
   parse() {
+    const hasCastTo = this.whereClause.find((where) => where.left === "cast_to")
+
+    if (hasCastTo) {
+      const castToValue = hasCastTo.right.value
+
+      return this.tile38Query(castToValue as string)
+    }
+
     if (this.document.name === DocumentKeyword.Tile38) {
       return this.tile38Query()
     }
@@ -215,11 +224,13 @@ export class SelectStatement implements BaseStatement {
       if (current.left === "url_id") {
         options.url = rightValue as string
         options.documentName = DocumentKeyword.Url
+        continue
       }
 
       if (current.left === "metabase_id") {
-        options.params['cardid'] = rightValue
+        options.params["cardid"] = rightValue
         options.documentName = DocumentKeyword.Metabase
+        continue
       }
 
       if (right instanceof Parameter) {
@@ -231,8 +242,8 @@ export class SelectStatement implements BaseStatement {
         }
       }
 
-      if (rightValue instanceof Literal || rightValue instanceof LiteralList) {
-        options.filters.push(rightValue.getValue(this.variables))
+      if (right instanceof Literal || right instanceof LiteralList) {
+        options.filters.push(current)
       }
     }
 
@@ -243,13 +254,16 @@ export class SelectStatement implements BaseStatement {
     return [options]
   }
 
-  tile38Query() {
+  tile38Query(castToValue?: string) {
     const options = []
     const head = []
     const tail: any[] = []
-    const filters = []
+    const rawFilters: ConditionTree[] = []
+    const filters = {}
     const areas = []
+    let metabaseId = ""
     let funcType = ""
+    let castFrom = ""
 
     for (let i = 0; i < this.whereClause.length; i++) {
       const current = this.whereClause[i]
@@ -257,8 +271,17 @@ export class SelectStatement implements BaseStatement {
       const right = current.right
       const rightValue = right.value
 
+      if (castToValue) {
+        head[1] = "replacement_tile38_id"
+      }
+
       if (current.left === "tile38_id") {
         head[1] = rightValue
+      }
+
+      if (current.left === "metabase_id") {
+        castFrom = DocumentKeyword.Metabase
+        metabaseId = rightValue as string
       }
 
       if (right instanceof Parameter) {
@@ -329,21 +352,17 @@ export class SelectStatement implements BaseStatement {
         continue
       }
 
-      if (
-        ["nearby", "intersects", "within", "search"].includes(
-          current.left
-        )
-      ) {
+      if (["nearby", "intersects", "within", "search"].includes(current.left)) {
         head[0] = current.left
 
         const func = rightValue
 
         if (func instanceof Func) {
-          if (func.identifier === 'get') {
+          if (func.identifier === "get") {
             func.args.value.forEach((literal, index) => {
               areas.push({
                 name: literal.value,
-                level: this.getAdminLevel(index)
+                level: this.getAdminLevel(index),
               })
             })
             continue
@@ -374,8 +393,8 @@ export class SelectStatement implements BaseStatement {
         }
       }
 
-      if (rightValue instanceof Literal || rightValue instanceof LiteralList) {
-        filters.push(rightValue.getValue(this.variables))
+      if (right instanceof Literal || right instanceof LiteralList) {
+        rawFilters.push(current)
       }
     }
 
@@ -384,22 +403,25 @@ export class SelectStatement implements BaseStatement {
     }
 
     if (funcType === "current_points") {
+      console.log('this.currentPoints', this.currentPoints, tail)
       return this.currentPoints
         .map((item) => {
           const [lat, lon, , text] = item.data[0].data
 
-          const currentPointIndex = tail.indexOf("current_points")
+          const tailCloned = [...tail]
+          const currentPointIndex = tailCloned.indexOf("current_points")
           if (currentPointIndex > -1) {
-            tail.splice(currentPointIndex, 1, lat, lon)
+            tailCloned.splice(currentPointIndex, 1, lat, lon)
+            // const newTail = tail[currentPointIndex].replace('current_points', `${lat} ${lon}`)
 
             return {
               data: {
-                query: head.concat(options).concat(tail).join(" "),
+                query: head.concat(options).concat(tailCloned).join(" "),
               },
               documentName: DocumentKeyword.Tile38,
               method: "POST",
               alias: this.document.alias,
-              filters,
+              filters: rawFilters,
             }
           }
 
@@ -408,11 +430,44 @@ export class SelectStatement implements BaseStatement {
         .filter((o) => !!o)
     }
 
+    rawFilters.forEach((data) => {
+      if (["metabase_id", "url_id", "cast_to"].includes(data.left)) {
+        return
+      }
+
+      const rightValue = data.right.value
+
+      if (data.operator === Operator.Equal && typeof rightValue === "string") {
+        filters[data.left] = [data.right.value]
+      }
+
+      if (rightValue instanceof LiteralList) {
+        filters[data.left] = rightValue.value.map((o) => o.value)
+      }
+
+      if (typeof rightValue === "number") {
+        if (filters[data.left]) {
+          filters[data.left][0].numeric.push(data.operator, rightValue)
+          return
+        }
+
+        filters[data.left] = [
+          {
+            numeric: [data.operator, rightValue],
+          },
+        ]
+      }
+    })
+
     return [
       {
         data: {
           query: head.concat(options).concat(tail).join(" "),
+          filters,
         },
+        castTo: castToValue,
+        castFrom,
+        metabaseId,
         head,
         options,
         tail,
@@ -421,6 +476,11 @@ export class SelectStatement implements BaseStatement {
         method: "POST",
         alias: this.document.alias,
         filters,
+        rawFilters,
+        setId(id: string) {
+          this.head[1] = id
+          this.data.query = this.data.query.replace('replacement_tile38_id', id)
+        },
       },
     ]
   }

@@ -11,6 +11,9 @@ export const opt = P.string("").map(() => undefined)
 
 export const wsSepComma = P.seq(multipleSpaces, P.string(","), multipleSpaces)
 
+export const trueValue = word("true").result(true)
+export const falseValue = word("false").result(false)
+
 export function takeUntil(end) {
   return P(function (input, i) {
     let words = []
@@ -32,18 +35,6 @@ export function takeUntil(end) {
     return P.makeFailure(i, "something went wrong")
   })
 }
-
-export const asAlias = P.seqMap(
-  multipleSpaces,
-  P.string("as"),
-  multipleSpaces,
-  P.letters,
-  function () {
-    return arguments[3]
-  }
-)
-  .times(0, 1)
-  .or(opt)
 
 /**
  * Comment
@@ -211,6 +202,8 @@ export const stringLiteral = P.regexp(/[\u4e00-\u9fa5_a-zA-Z0-9/:.@#?=AĂÂÁẮ
 export const literal = P.alt(
   stringLiteral,
   numberLiteral,
+  trueValue,
+  falseValue,
   P.string("current_date").map(() => new CurrentDate()),
   P.string("current_time").map(() => new CurrentTime()),
   P.string("current_bounds").map(() => new CurrentBounds()),
@@ -222,6 +215,18 @@ export const valueList = word("(")
   .then(literal.sepBy(word(",")))
   .skip(word(")"))
   .map(result => new LiteralList(result))
+
+export const asAlias = P.seqMap(
+  multipleSpaces,
+  P.string("as"),
+  multipleSpaces,
+  textLiteral,
+  function () {
+    return arguments[3]
+  }
+)
+  .times(0, 1)
+  .or(opt)
 
 export enum Operator {
   Not = "not",
@@ -243,6 +248,11 @@ export const operatorExpr = P.alt(
   P.string(Operator.LessOrEqual),
   P.string(Operator.Less),
   P.string(Operator.In)
+)
+
+export const objectExpr = P.seq(
+  P.seq(P.string("{"), multipleSpaces),
+
 )
 
 export type IntoIntoType = number | string | Array<number | string>
