@@ -403,7 +403,6 @@ export class SelectStatement implements BaseStatement {
     }
 
     if (funcType === "current_points") {
-      console.log('this.currentPoints', this.currentPoints, tail)
       return this.currentPoints
         .map((item) => {
           const [lat, lon, , text] = item.data[0].data
@@ -431,7 +430,7 @@ export class SelectStatement implements BaseStatement {
     }
 
     rawFilters.forEach((data) => {
-      if (["metabase_id", "url_id", "cast_to"].includes(data.left)) {
+      if (["metabase_id", "url_id", "cast_to", "tile38_id"].includes(data.left)) {
         return
       }
 
