@@ -259,7 +259,7 @@ export class SelectStatement implements BaseStatement {
     const head = []
     const tail: any[] = []
     const rawFilters: ConditionTree[] = []
-    const filters = {}
+    const filter = {}
     const areas = []
     let metabaseId = ""
     let funcType = ""
@@ -301,14 +301,17 @@ export class SelectStatement implements BaseStatement {
 
         if (current.left === "service") {
           if (rightValue instanceof LiteralList) {
-            rightValue.value.forEach((v) => {
-              options.push(`where service-${v.value} 1 1`)
-            })
+            // rightValue.value.forEach((v) => {
+            //   options.push(`where service-${v.value} 1 1`)
+            // })
+            const mapServices = this.globalVariables.services
+            const listService = rightValue.value.map(v => mapServices[v.value as string])
+            options.push(`wherein service ${rightValue.value.length} ${listService.join(' ')}`)
           }
 
-          if (rightValue instanceof Literal) {
-            options.push(`where service-${rightValue.value} 1 1`)
-          }
+          // if (rightValue instanceof Literal) {
+          //   options.push(`where service-${rightValue.value} 1 1`)
+          // }
 
           continue
         }
@@ -437,20 +440,20 @@ export class SelectStatement implements BaseStatement {
       const rightValue = data.right.value
 
       if (data.operator === Operator.Equal && typeof rightValue === "string") {
-        filters[data.left] = [data.right.value]
+        filter[data.left] = [data.right.value]
       }
 
       if (rightValue instanceof LiteralList) {
-        filters[data.left] = rightValue.value.map((o) => o.value)
+        filter[data.left] = rightValue.value.map((o) => o.value)
       }
 
       if (typeof rightValue === "number") {
-        if (filters[data.left]) {
-          filters[data.left][0].numeric.push(data.operator, rightValue)
+        if (filter[data.left]) {
+          filter[data.left][0].numeric.push(data.operator, rightValue)
           return
         }
 
-        filters[data.left] = [
+        filter[data.left] = [
           {
             numeric: [data.operator, rightValue],
           },
@@ -462,7 +465,7 @@ export class SelectStatement implements BaseStatement {
       {
         data: {
           query: head.concat(options).concat(tail).join(" "),
-          filters,
+          filter,
         },
         castTo: castToValue,
         castFrom,
@@ -474,7 +477,7 @@ export class SelectStatement implements BaseStatement {
         documentName: DocumentKeyword.Tile38,
         method: "POST",
         alias: this.document.alias,
-        filters,
+        filter,
         rawFilters,
         setId(id: string) {
           this.head[1] = id
